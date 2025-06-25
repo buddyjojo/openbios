@@ -130,6 +130,14 @@ int uart_charav(int port);
 char uart_getchar(int port);
 void uart_putchar(int c);
 #endif
+#ifdef CONFIG_DRIVER_USBGECKO
+void gecko_putchar(int c);
+void gecko_send(const void *buffer, unsigned int size);
+void gecko_receive(void *buffer, unsigned int size);
+unsigned int gecko_receivebyte(char* data);
+unsigned int gecko_checkrx(void);
+char gecko_getchar(void);
+#endif
 #ifdef CONFIG_DRIVER_ESCC
 int escc_uart_init(phys_addr_t port, unsigned long speed);
 int escc_uart_charav(uintptr_t port);

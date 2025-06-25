@@ -170,7 +170,7 @@ residual_build(uint32_t memsize, uint32_t load_base, uint32_t load_size)
     /* Memory mappings */
     /* First segment: firmware */
     res->maps[0].usage = 0x0007;
-    res->maps[0].base  = 0xfff00000;
+    res->maps[0].base  = 0x00f00000;
     res->maps[0].count = 0x00100000 >> 12;
     i = 1;
     /* Boot image */

@@ -56,7 +56,7 @@ struct _console_ops mac_console_ops = {
 static int prep_putchar(int c)
 {
 #ifdef CONFIG_DEBUG_CONSOLE_SERIAL
-	uart_putchar(c & 0xff);
+	gecko_putchar(c & 0xff);
 #endif
         return c;
 }
@@ -64,7 +64,7 @@ static int prep_putchar(int c)
 static int prep_availchar(void)
 {
 #ifdef CONFIG_DEBUG_CONSOLE_SERIAL
-	if (uart_charav(CONFIG_SERIAL_PORT))
+	if (gecko_checkrx())
 		return 1;
 #endif
         return 0;
@@ -73,8 +73,8 @@ static int prep_availchar(void)
 static int prep_getchar(void)
 {
 #ifdef CONFIG_DEBUG_CONSOLE_SERIAL
-	if (uart_charav(CONFIG_SERIAL_PORT))
-		return (uart_getchar(CONFIG_SERIAL_PORT));
+	if (gecko_checkrx())
+		return (gecko_getchar());
 #endif
         return 0;
 }

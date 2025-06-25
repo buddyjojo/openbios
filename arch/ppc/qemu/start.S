@@ -394,37 +394,129 @@ GLOBL(_entry):
 
 no_64bit:
 	/* clear MSR, disable MMU */
-	mtmsr	r0
+	# mtmsr	r0
 
 real_entry:
 #endif
 
-	/* copy exception vectors */
-
-	LOAD_REG_IMMEDIATE(r3, __vectors)
-	li	r4,0
-	li	r5,__vectors_end - __vectors + 16
-	rlwinm	r5,r5,0,0,28
-1:	lwz	r6,0(r3)
-	lwz	r7,4(r3)
-	lwz	r8,8(r3)
-	lwz	r9,12(r3)
-	stw	r6,0(r4)
-	stw	r7,4(r4)
-	stw	r8,8(r4)
-	stw	r9,12(r4)
-	dcbst	0,r4
-	sync
-	icbi	0,r4
-	sync
-	addi	r5,r5,-16
-	addi	r3,r3,16
-	addi	r4,r4,16
-	cmpwi	r5,0
-	bgt	1b
+	/* turn the MMU off */
+	mfmsr	r12                                           
+	rlwinm	r12, r12, 0, ~((1<<4)|(1<<5)) /* MSR_DR|MSR_IR */
+	bl	1f                                                
+1:
+	mflr	r11                                       
+	clrlwi	r11, r11, 3		/* convert to a real address */  
+	addi	r11, r11, _mmu_off - 1b 
+	mtsrr0	r11 
+	mtsrr1	r12
+	rfi
+_mmu_off:
+	/* setup BATs */
+	isync
+	# mtmsr	r0
+	li      8, 0
+	mtspr	0x210, 8	/* IBAT0U */
+	mtspr	0x212, 8	/* IBAT1U */
+	mtspr	0x214, 8	/* IBAT2U */
+	mtspr	0x216, 8	/* IBAT3U */
+	mtspr	0x218, 8	/* DBAT0U */
+	mtspr	0x21a, 8	/* DBAT1U */
+	mtspr	0x21c, 8	/* DBAT2U */
+	mtspr	0x21e, 8	/* DBAT3U */
 	isync
 
-	bl compute_ramsize
+	mtspr	0x230, 8	/* IBAT4U */
+	mtspr	0x232, 8	/* IBAT5U */
+	mtspr	0x234, 8	/* IBAT6U */
+	mtspr	0x236, 8	/* IBAT7U */
+	mtspr	0x238, 8	/* DBAT4U */
+	mtspr	0x23a, 8	/* DBAT5U */
+	mtspr	0x23c, 8	/* DBAT6U */
+	mtspr	0x23e, 8	/* DBAT7U */
+	isync
+	
+	li	8, 0x01ff	/* first 16MiB */
+	li	9, 0x0002	/* rw */
+	mtspr	0x211, 9	/* IBAT0L */
+	mtspr	0x210, 8	/* IBAT0U */
+	mtspr	0x219, 9	/* DBAT0L */
+	mtspr	0x218, 8	/* DBAT0U */
+
+	lis	8, 0x0c00	/* I/O mem */
+	ori	8, 8, 0x3ff	/* 32MiB */
+	lis	9, 0x0c00
+	ori	9, 9, 0x002a	/* uncached, guarded, rw */
+	mtspr	0x21b, 9	/* DBAT1L */
+	mtspr	0x21a, 8	/* DBAT1U */
+
+	lis	8, 0x0100	/* next 8MiB */
+	ori	8, 8, 0x00ff	/* 8MiB */
+	lis	9, 0x0100
+	ori	9, 9, 0x0002	/* rw */
+	mtspr	0x215, 9	/* IBAT2L */
+	mtspr	0x214, 8	/* IBAT2U */
+	mtspr	0x21d, 9	/* DBAT2L */
+	mtspr	0x21c, 8	/* DBAT2U */
+
+	lis	8, 0x1000	/* MEM2 */
+	ori	8, 8, 0x07ff	/* 64MiB */
+	lis	9, 0x1000
+	ori	9, 9, 0x0002	/* rw */
+	mtspr	0x216, 8	/* IBAT3U */
+	mtspr	0x217, 9	/* IBAT3L */
+	mtspr	0x21e, 8	/* DBAT3U */
+	mtspr	0x21f, 9	/* DBAT3L */
+
+	/* enable the high BATs */
+	mfspr	8, 0x3f3	/* HID4 */
+	oris	8, 8, 0x0200
+	mtspr	0x3f3, 8	/* HID4 */
+
+	/* enable and invalidate the caches if not already enabled */
+	mfspr	8, 0x3f0	/* HID0 */
+	andi.	0, 8, (1<<15)		/* HID0_ICE */
+	bne	1f
+	ori	8, 8, (1<<15)|(1<<11)	/* HID0_ICE|HID0_ICFI*/
+1:
+	andi.	0, 8, (1<<14)		/* HID0_DCE */
+	bne	1f
+	ori	8, 8, (1<<14)|(1<<10)	/* HID0_DCE|HID0_DCFI*/
+1:
+	mtspr	0x3f0, 8	/* HID0 */
+	isync
+	
+	/* copy exception vectors */
+
+#	 LOAD_REG_IMMEDIATE(r3, __vectors)
+
+	# lis       r4, 0x8000
+	# ori       r4, r4, 0x0100
+
+	# lis	r4, 0x8000
+
+# 	li	r4,0
+# 	li	r5,__vectors_end - __vectors + 16
+# 	rlwinm	r5,r5,0,0,28
+# 1:	lwz	r6,0(r3)
+# 	lwz	r7,4(r3)
+# 	lwz	r8,8(r3)
+# 	lwz	r9,12(r3)
+# 	stw	r6,0(r4)
+# 	stw	r7,4(r4)
+# 	stw	r8,8(r4)
+# 	stw	r9,12(r4)
+# 	dcbst	0,r4
+# 	sync
+# 	icbi	0,r4
+# 	sync
+# 	addi	r5,r5,-16
+# 	addi	r3,r3,16
+# 	addi	r4,r4,16
+# 	cmpwi	r5,0
+# 	bgt	1b
+	isync
+
+#	bl compute_ramsize
 
 	/* Memory map:
 	 *
@@ -456,6 +548,8 @@ real_entry:
 	 *     :                         :
 	 * Bottom
 	 */
+	 
+	lis r3, 0x0180 /*24 mib ram size*/
 
 	addis	r1, r3, -16		/* ramsize - 1MB */
 
@@ -700,7 +794,7 @@ compute_ramsize:
         or      r1,r1,r0
         lbz     r0,0(r9)
         slwi    r0,r0,24
-        or      r3,r1,r0
+        or      r3,r1,r0 /*r3 size in bytes*/
         blr
 
         /* Hard reset vector */

@@ -46,7 +46,7 @@ extern void setup_mmu(unsigned long code_base);
  *
  */
 
-#define OF_CODE_START	0xfff00000UL
+#define OF_CODE_START	0x00f00000UL
 #define OF_CODE_SIZE    0x00100000
 #define IO_BASE			0x80000000UL
 

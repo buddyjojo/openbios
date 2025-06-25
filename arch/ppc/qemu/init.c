@@ -201,38 +201,38 @@ extern struct _console_ops mac_console_ops, prep_console_ops;
 void
 entry(void)
 {
-    uint32_t temp = 0;
-    char buf[5];
+    // uint32_t temp = 0;
+    // char buf[5];
 
     arch = &known_arch[ARCH_HEATHROW];
 
-    fw_cfg_init();
+    // fw_cfg_init();
 
-    fw_cfg_read(FW_CFG_SIGNATURE, buf, 4);
-    buf[4] = '\0';
-    if (strncmp(buf, "QEMU", 4) == 0) {
-        temp = fw_cfg_read_i32(FW_CFG_ID);
-        if (temp == 1) {
-            machine_id = fw_cfg_read_i16(FW_CFG_MACHINE_ID);
-            arch = &known_arch[machine_id];
-        }
-    }
+    // fw_cfg_read(FW_CFG_SIGNATURE, buf, 4);
+    // buf[4] = '\0';
+    // if (strncmp(buf, "QEMU", 4) == 0) {
+    //     temp = fw_cfg_read_i32(FW_CFG_ID);
+    //     if (temp == 1) {
+    //         machine_id = fw_cfg_read_i16(FW_CFG_MACHINE_ID);
+    //         arch = &known_arch[machine_id];
+    //     }
+    // }
 
     isa_io_base = arch->io_base;
 
 #ifdef CONFIG_DEBUG_CONSOLE
-    if (is_apple()) {
-        init_console(mac_console_ops);
-    } else {
-        init_console(prep_console_ops);
-    }
+    // if (is_apple()) {
+    //     init_console(mac_console_ops);
+    // } else {
+         init_console(prep_console_ops);
+    // }
 #endif
 
-    if (temp != 1) {
-        printk("Incompatible configuration device version, freezing\n");
-        for (;;) {
-        }
-    }
+    // if (temp != 1) {
+    //     printk("Incompatible configuration device version, freezing\n");
+    //     for (;;) {
+    //     }
+    // }
 
     ofmem_init();
     initialize_forth();
@@ -932,11 +932,11 @@ arch_of_init(void)
     case ARCH_MAC99_U3:
         /* The NewWorld NVRAM is not located in the MacIO device */
         macio_nvram_init("/", 0);
-        ob_pci_init();
+        //ob_pci_init();
         ob_unin_init();
         break;
     default:
-        ob_pci_init();
+        //ob_pci_init();
     }
 
     feval("0 to my-self");
